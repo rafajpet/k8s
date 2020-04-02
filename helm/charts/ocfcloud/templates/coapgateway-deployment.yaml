@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ocfcloud.fullname" . }}
+  labels:
+    {{- include "ocfcloud.coapgateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ocfcloud.coapgateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ocfcloud.coapgateway.selectorLabels" . | nindent 8 }}
+    spec:
+    {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: {{ .Values.images.coapgateway }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image:  {{ template "ocfcloud.coapgateway.image" . }}
+          ports:
+            - name: coaps
+              containerPort: 5684
+              protocol: TCP
+          env:
+            - name: LOG_ENABLE_DEBUG
+              value: "true"
+            - name: EXTERNAL_PORT
+              value: "5684"
+            - name: FQDN
+              value: "192.168.100.19"
+            - name: ADDRESS
+              value: "0.0.0.0:5684"
+            - name: NETWORK
+              value: "tcp-tls"
+            - name: NATS_URL
+              value: "nats://nats:4222"
+            - name: MONGODB_URI
+              value: "mongodb://mongodb:27017"
+            - name: RESOURCE_AGGREGATE_ADDRESS
+              value: "resource-aggregate:9100"
+            - name: RESOURCE_DIRECTORY_ADDRESS
+              value: "resource-directory:9100"
+            - name: AUTH_SERVER_ADDRESS
+              value: "identity-server:3001"
+          resources:
+            {{- toYaml .Values.resources.coapgateway | nindent 12 }}
+      {{- with .Values.nodeSelector.coapgateway }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity.coapgateway }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations.coapgateway }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ocfcloud.fullname" . }}
+  labels:
+    {{- include "ocfcloud.coapgateway.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.port.coapgateway }}
+      targetPort: coaps
+      protocol: TCP
+      name: coaps
+  selector:
+    {{- include "ocfcloud.coapgateway.selectorLabels" . | nindent 4 }}
