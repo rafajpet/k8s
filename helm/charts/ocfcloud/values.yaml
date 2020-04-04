@@ -4,15 +4,55 @@
 
 replicaCount: 1
 
-
+clusterDomain: cluster.local
 
 general:
   repository: ocfcloud
   tag: vnext
 
 
-images:
-  coapgateway: coap-gateway
+services:
+  coapgateway: 
+    name: coap-gateway
+    debug: true
+    coapsPort: 5684
+    fqdn: "127.0.0.1"
+    image: coap-gateway
+  resourcedirectory:
+    name: resource-directory
+    grpcPort: 9100
+    debug: true
+    image: resource-directory
+  resourceaggregate:
+    name: resource-aggregate
+    grpcPort: 9100
+    debug: true
+    image: resource-aggregate
+  authorizationserver:
+    name: authorization-server
+    grpcPort: 9100
+    debug: true    
+    image: authorization-server
+  grpcgateway:
+    name: grpc-gateway
+    grpcPort: 9100
+    debug: true 
+    image: grpc-gateway
+  nats:
+    name: nats
+    port: 4222
+  mongodb:
+    name: mongodb
+    port: 27017 
+
+coapgateway: {}
+resourcedirectory: {}
+resourceaggregate: {}
+resourcedirectory: {}
+authorizationserver: {}
+grpcgateway: {}
+mongodb: {}
+nats: {}
 
 port:
   coapgateway: 5684
@@ -73,3 +113,9 @@ tolerations:
 
 affinity:
   coapgateway: {}
+
+podSecurityContext:
+  coapgateway: {}
+
+securityContext:
+  coapgateway: {}  

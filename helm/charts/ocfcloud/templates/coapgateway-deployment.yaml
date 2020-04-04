@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "ocfcloud.fullname" . }}
+  name: {{ include "ocfcloud.coapgateway.fullname" . }}
   labels:
     {{- include "ocfcloud.coapgateway.labels" . | nindent 4 }}
 spec:
@@ -19,37 +19,41 @@ spec:
         {{- toYaml . | nindent 8 }}
     {{- end }}
       securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+        {{- toYaml .Values.podSecurityContext.coapgateway | nindent 8 }}
       containers:
-        - name: {{ .Values.images.coapgateway }}
+        - name: {{ .Values.services.coapgateway.name }}
           securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
-          image:  {{ template "ocfcloud.coapgateway.image" . }}
+            {{- toYaml .Values.securityContext.coapgateway | nindent 12 }}
+          image: {{ template "ocfcloud.coapgateway.image" . }}
           ports:
             - name: coaps
-              containerPort: 5684
+              containerPort: {{ .Values.services.coapgateway.coapsPort }}
               protocol: TCP
           env:
+            {{- with .Values.services.coapgateway.debug }}
             - name: LOG_ENABLE_DEBUG
-              value: "true"
+              value: true
+            {{- end }}
             - name: EXTERNAL_PORT
-              value: "5684"
+              value: {{ .Values.services.coapgateway.coapsPort  }}
+            {{- if .Values.services.coapgateway.fqdn }}
             - name: FQDN
-              value: "192.168.100.19"
+              value: {{ .Values.services.coapgateway.fqdn  }}
+            {{- end }}              
             - name: ADDRESS
-              value: "0.0.0.0:5684"
+              value: 0.0.0.0:{{ .Values.services.coapgateway.coapsPort }}
             - name: NETWORK
-              value: "tcp-tls"
+              value: tcp-tls
             - name: NATS_URL
-              value: "nats://nats:4222"
+              value: {{ template "ocfcloud.nats.address" . }}
             - name: MONGODB_URI
-              value: "mongodb://mongodb:27017"
+              value: {{ template "ocfcloud.mongodb.address" .  }}
             - name: RESOURCE_AGGREGATE_ADDRESS
-              value: "resource-aggregate:9100"
+              value: {{ template "ocfcloud.resourceaggregate.address" .  }}
             - name: RESOURCE_DIRECTORY_ADDRESS
-              value: "resource-directory:9100"
+              value: {{ template "ocfcloud.resourcedirectory.address" .  }}
             - name: AUTH_SERVER_ADDRESS
-              value: "identity-server:3001"
+              value: {{ template "ocfcloud.authorizationserver.address" .  }}
           resources:
             {{- toYaml .Values.resources.coapgateway | nindent 12 }}
       {{- with .Values.nodeSelector.coapgateway }}
