@@ -18,26 +18,36 @@ services:
     coapsPort: 5684
     fqdn: "127.0.0.1"
     image: coap-gateway
+    replicaCount: 1
   resourcedirectory:
     name: resource-directory
     grpcPort: 9100
     debug: true
     image: resource-directory
+    replicaCount: 1    
   resourceaggregate:
     name: resource-aggregate
     grpcPort: 9100
     debug: true
     image: resource-aggregate
+    replicaCount: 1    
   authorizationserver:
     name: authorization-server
     grpcPort: 9100
     debug: true    
     image: authorization-server
+    replicaCount: 1    
   grpcgateway:
     name: grpc-gateway
     grpcPort: 9100
     debug: true 
     image: grpc-gateway
+    replicaCount: 1    
+    oauth:
+      clientId: 
+      clientSecret:
+      scopes:
+      tokenUrl:
   nats:
     name: nats
     port: 4222
@@ -104,18 +114,42 @@ ingress:
 
 resources:
   coapgateway: {}
+  resourceaggregate: {}
+  resourcedirectory: {}
+  grpcgateway: {}
+  authorizationserver: {}
 
 nodeSelector:
   caopgateway: {}
+  resourceaggregate: {}
+  resourcedirectory: {}
+  grpcgateway: {} 
+  authorizationserver: {} 
 
 tolerations:
   coapgateway: []
+  resourceaggregate: {}
+  resourcedirectory: {}
+  grpcgateway: {}
+  authorizationserver: {}  
 
 affinity:
   coapgateway: {}
+  resourceaggregate: {}
+  resourcedirectory: {}
+  grpcgateway: {}
+  authorizationserver: {}  
 
 podSecurityContext:
   coapgateway: {}
+  resourceaggregate: {}
+  resourcedirectory: {}
+  grpcgateway: {}
+  authorizationserver: {}  
 
 securityContext:
   coapgateway: {}  
+  resourceaggregate: {}
+  resourcedirectory: {} 
+  grpcgateway: {}  
+  authorizationserver: {}  

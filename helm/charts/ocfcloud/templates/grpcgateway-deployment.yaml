@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ocfcloud.grpcgateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}  
+  labels:
+    {{- include "ocfcloud.grpcgateway.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.grpcgateway.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ocfcloud.grpcgateway.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ocfcloud.grpcgateway.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext.grpcgateway | nindent 8 }}
+      containers:
+        - name: {{ .Values.services.grpcgateway.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext.grpcgateway | nindent 12 }}
+          image: {{ template "ocfcloud.grpcgateway.image" . }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.services.grpcgateway.grpcPort }}
+              protocol: TCP
+          env:
+            {{- with .Values.services.grpcgateway.debug }}
+            - name: LOG_ENABLE_DEBUG
+              value: true
+            {{- end }}
+            - name: EXTERNAL_PORT
+              value: {{ .Values.services.grpcgateway.grpcPort  }}
+            - name: ADDRESS
+              value: 0.0.0.0:{{ .Values.services.grpcgateway.grpcPort }}
+            - name: NATS_URL
+              value: {{ template "ocfcloud.nats.address" . }}
+            - name: MONGODB_URI
+              value: {{ template "ocfcloud.mongodb.address" .  }}
+            - name: AUTH_SERVER_ADDRESS
+              value: {{ template "ocfcloud.authorizationserver.address" .  }}
+            - name: SERVICE_OAUTH_CLIENT_ID
+              value: {{ .Values.services.grpcgateway.oauth.clientId  }}
+            - name: SERVICE_OAUTH_CLIENT_SECRET
+              value: {{ .Values.services.grpcgateway.oauth.clientSecret  }}
+            - name: SERVICE_OAUTH_SCOPES
+              value: {{ .Values.services.grpcgateway.oauth.scopes }}
+            - name: SERVICE_OAUTH_ENDPOINT_TOKEN_URL
+              value: {{ .Values.services.grpcgateway.oauth.tokenUrl }}
+          resources:
+            {{- toYaml .Values.resources.grpcgateway | nindent 12 }}
+      {{- with .Values.nodeSelector.grpcgateway }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity.grpcgateway }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations.grpcgateway }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

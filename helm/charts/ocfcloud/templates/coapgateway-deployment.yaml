@@ -2,10 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: {{ include "ocfcloud.coapgateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}  
   labels:
     {{- include "ocfcloud.coapgateway.labels" . | nindent 4 }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.services.coapgateway.replicaCount }}
   selector:
     matchLabels:
       {{- include "ocfcloud.coapgateway.selectorLabels" . | nindent 6 }}
@@ -14,10 +15,6 @@ spec:
       labels:
         {{- include "ocfcloud.coapgateway.selectorLabels" . | nindent 8 }}
     spec:
-    {{- with .Values.imagePullSecrets }}
-      imagePullSecrets:
-        {{- toYaml . | nindent 8 }}
-    {{- end }}
       securityContext:
         {{- toYaml .Values.podSecurityContext.coapgateway | nindent 8 }}
       containers:

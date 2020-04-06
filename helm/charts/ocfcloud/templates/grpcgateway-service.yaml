@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "ocfcloud.grpcgateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}  
+  labels:
+    {{- include "ocfcloud.grpcgateway.labels" . | nindent 4 }}
+spec:
+  ports:
+    - port: {{ .Values.services.grpcgateway.grpcPort }}
+      targetPort: grpc
+      protocol: TCP
+      name: grpc
+  selector:
+    {{- include "ocfcloud.grpcgateway.selectorLabels" . | nindent 4 }}

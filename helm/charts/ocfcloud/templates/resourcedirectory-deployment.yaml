@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ocfcloud.resourcedirectory.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ocfcloud.resourcedirectory.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.resourcedirectory.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ocfcloud.resourcedirectory.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ocfcloud.resourcedirectory.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext.resourcedirectory | nindent 8 }}
+      containers:
+        - name: {{ .Values.services.resourcedirectory.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext.resourcedirectory | nindent 12 }}
+          image: {{ template "ocfcloud.resourcedirectory.image" . }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.services.resourcedirectory.grpcPort }}
+              protocol: TCP
+          env:
+            {{- with .Values.services.resourcedirectory.debug }}
+            - name: LOG_ENABLE_DEBUG
+              value: true
+            {{- end }}
+            - name: EXTERNAL_PORT
+              value: {{ .Values.services.resourcedirectory.grpcPort  }}
+            - name: ADDRESS
+              value: 0.0.0.0:{{ .Values.services.resourcedirectory.grpcPort }}
+            - name: NATS_URL
+              value: {{ template "ocfcloud.nats.address" . }}
+            - name: MONGODB_URI
+              value: {{ template "ocfcloud.mongodb.address" .  }}
+            - name: AUTH_SERVER_ADDRESS
+              value: {{ template "ocfcloud.authorizationserver.address" .  }}
+          resources:
+            {{- toYaml .Values.resources.resourcedirectory | nindent 12 }}
+      {{- with .Values.nodeSelector.resourcedirectory }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity.resourcedirectory }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations.resourcedirectory }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

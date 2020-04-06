@@ -1,0 +1,447 @@
+version: "3.3"
+
+networks:
+  proxy:
+    external: true
+  hostnet:
+    external:
+      name: host
+  kiconnect:
+    external: true
+
+
+volumes:
+  identity-db:
+
+  kafka-data:
+
+  zookeeper-data:
+
+  iotivity-db:
+  iotivity-db-config:
+
+secrets:
+  secret-kafka-client-keystore:
+    external: true
+  secret-kafka-client-keystore-password:
+    external: true
+  secret-kafka-client-ssl-password:
+    external: true
+  secret-kafka-client-truststore:
+    external: true
+  secret-kafka-client-truststore-password:
+    external: true
+  secret-kafka-general-client-crt:
+    external: true
+  secret-kafka-general-client-crt-key:
+    external: true
+  secret-kafka-server-keystore:
+    external: true
+  secret-kafka-server-keystore-password:
+    external: true
+  secret-kafka-server-ssl-password:
+    external: true
+  secret-kafka-server-truststore:
+    external: true
+  secret-kafka-server-truststore-password:
+    external: true
+  secret-ocf-grpc-gateway-crt:
+    external: true
+  secret-ocf-grpc-gateway-key:
+    external: true
+  secret-identity-server-crt:
+    external: true
+  secret-identity-server-key:
+    external: true
+  secret-mongodb-crt:
+    external: true
+  secret-nats-crt:
+    external: true
+  secret-nats-key:
+    external: true
+  secret-ocf-resource-aggregate-crt:
+    external: true
+  secret-ocf-resource-aggregate-key:
+    external: true
+  secret-ocf-resource-directory-crt:
+    external: true
+  secret-ocf-resource-directory-key:
+    external: true
+  secret-web-api-backend-crt:
+    external: true
+  secret-web-api-backend-key:
+    external: true
+  secret-web-api-local-crt:
+    external: true
+  secret-web-api-local-key:
+    external: true
+  secret-ocf-client-crt:
+    external: true
+  secret-ocf-client-key:
+    external: true
+  secret-coap-gateway-crt:
+    external: true
+  secret-coap-gateway-key:
+    external: true
+  secret-root-ca-crt:
+    external: true
+  secret-root-ca-key:
+    external: true
+  secret-kiconnect-roles-cfg:
+    external: true
+  secret-kiconnect-clients-cfg:
+    external: true
+  secret-kiconnect-users-cfg:
+    external: true
+  secret-kiconnect-scopes-cfg:
+    external: true
+  secret-sign-jwt-crt:
+    external: true
+
+  secret-web-api-local-cfg:
+    external: true
+
+  secret-web-api-backend-cfg:
+    external: true
+
+# deploy_local_web_api
+# deploy_backend_web_api
+# secret_web_api_local_cfg: 'secret-web-api-local-cfg'
+# secret_web_api_backend_cfg: 'secret-web-api-backend-cfg'
+services:
+  coap-gateway:
+    image: ocfcloud/coap-gateway:vnext
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - kiconnect
+    ports:
+      - 5684:5684
+    environment:
+      - LOG_ENABLE_DEBUG=true
+      - EXTERNAL_PORT=5684
+      - FQDN="192.168.100.19"
+      - ADDRESS=0.0.0.0:5684
+      - NETWORK=tcp-tls
+      - NATS_URL=nats://nats:4222
+      - MONGODB_URI=mongodb://mongodb:27017
+      - RESOURCE_AGGREGATE_ADDRESS=resource-aggregate:9100
+      - RESOURCE_DIRECTORY_ADDRESS=resource-directory:9100
+      - AUTH_SERVER_ADDRESS=identity-server:3001
+      - LISTEN_TYPE=file
+      - LISTEN_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - LISTEN_FILE_CERT_NAME=secret-coap-gateway-crt
+      - LISTEN_FILE_CERT_KEY_NAME=secret-coap-gateway-key
+      - LISTEN_FILE_CERT_DIR_PATH=/run/secrets
+      - DIAL_TYPE=file
+      - DIAL_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - DIAL_FILE_CERT_NAME=secret-ocf-client-crt
+      - DIAL_FILE_CERT_KEY_NAME=secret-ocf-client-key
+      - DIAL_FILE_CERT_DIR_PATH=/run/secrets
+    secrets:
+      - secret-root-ca-crt
+      - secret-coap-gateway-crt
+      - secret-coap-gateway-key
+      - secret-ocf-client-crt
+      - secret-ocf-client-key
+
+  nats:
+    image: nats:2.1.0
+    command:
+      --tls --tlsverify
+      --tlscert=/run/secrets/secret-nats-crt
+      --tlskey=/run/secrets/secret-nats-key
+      --tlscacert=/run/secrets/secret-root-ca-crt
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - kiconnect
+    secrets:
+      - secret-root-ca-crt
+      - secret-nats-crt
+      - secret-nats-key
+
+  resource-aggregate:
+    image: ocfcloud/resource-aggregate:vnext
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - kiconnect
+    environment:
+      - AUTH_SERVER_ADDRESS=identity-server:3001
+      - LOG_ENABLE_DEBUG=true
+      - NATS_URL=nats://nats:4222
+      - MONGODB_URI=mongodb://mongodb:27017
+      - LISTEN_TYPE=file
+      - LISTEN_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - LISTEN_FILE_CERT_NAME=secret-ocf-resource-aggregate-crt
+      - LISTEN_FILE_CERT_KEY_NAME=secret-ocf-resource-aggregate-key
+      - LISTEN_FILE_CERT_DIR_PATH=/run/secrets
+      - DIAL_TYPE=file
+      - DIAL_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - DIAL_FILE_CERT_NAME=secret-ocf-client-crt
+      - DIAL_FILE_CERT_KEY_NAME=secret-ocf-client-key
+      - DIAL_FILE_CERT_DIR_PATH=/run/secrets
+    secrets:
+      - secret-root-ca-crt
+      - secret-ocf-resource-aggregate-crt
+      - secret-ocf-resource-aggregate-key
+      - secret-ocf-client-crt
+      - secret-ocf-client-key
+
+
+
+  resource-directory:
+    image: ocfcloud/resource-directory:vnext
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - kiconnect
+    environment:
+      - AUTH_SERVER_ADDRESS=identity-server:3001
+      - LOG_ENABLE_DEBUG=true
+      - NATS_URL=nats://nats:4222
+      - MONGODB_URI=mongodb://mongodb:27017
+      - LISTEN_TYPE=file
+      - LISTEN_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - LISTEN_FILE_CERT_NAME=secret-ocf-resource-directory-crt
+      - LISTEN_FILE_CERT_KEY_NAME=secret-ocf-resource-directory-key
+      - LISTEN_FILE_CERT_DIR_PATH=/run/secrets
+      - DIAL_TYPE=file
+      - DIAL_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - DIAL_FILE_CERT_NAME=secret-ocf-client-crt
+      - DIAL_FILE_CERT_KEY_NAME=secret-ocf-client-key
+      - DIAL_FILE_CERT_DIR_PATH=/run/secrets
+    secrets:
+      - secret-root-ca-crt
+      - secret-ocf-resource-directory-crt
+      - secret-ocf-resource-directory-key
+      - secret-ocf-client-crt
+      - secret-ocf-client-key
+
+  grpc-gateway:
+    image: dockerhub.kistler.com/skybase/kiconnect/grpc-gateway:d7a8139f
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - proxy
+      - kiconnect
+    ports:
+      - "9100:9100"
+    environment:
+      - LOG_ENABLE_DEBUG=true
+      - NATS_URL=nats://nats:4222
+      - MONGO_URI=mongodb://mongodb:27017
+      - JWKS_URL=https://identity-server:3001/.well-known/openid-configuration/jwks
+      - ROLES_URL=https://identity-server:3001/api/internal/permissionsets
+      - SIGNER_CERTIFICATE=/run/secrets/secret-root-ca-crt
+      - SIGNER_PRIVATE_KEY=/run/secrets/secret-root-ca-key
+      - RESOURCE_AGGREGATE_ADDRESS=resource-aggregate:9100
+      - RESOURCE_DIRECTORY_ADDRESS=resource-directory:9100
+      - AUTH_SERVER_ADDRESS=identity-server:3001
+      - LISTEN_TYPE=file
+      - LISTEN_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - LISTEN_FILE_CERT_NAME=secret-ocf-grpc-gateway-crt
+      - LISTEN_FILE_CERT_KEY_NAME=secret-ocf-grpc-gateway-key
+      - LISTEN_FILE_CERT_DIR_PATH=/run/secrets
+      - LISTEN_FILE_DISABLE_VERIFY_CLIENT_CERTIFICATE=true
+      - DIAL_TYPE=file
+      - DIAL_FILE_CA_POOL=/run/secrets/secret-root-ca-crt
+      - DIAL_FILE_CERT_NAME=secret-ocf-client-crt
+      - DIAL_FILE_CERT_KEY_NAME=secret-ocf-client-key
+      - DIAL_FILE_CERT_DIR_PATH=/run/secrets
+      - USER_MGMT_EXPIRATION=0s
+      - GODEBUG=http2debug=2
+      - GRPC_TRACE=all
+      - GRPC_VERBOSITY=DEBUG
+      - GRPC_GO_LOG_VERBOSITY_LEVEL=99
+      - GRPC_GO_LOG_SEVERITY_LEVEL=info
+      # OAuth2 integration with IS
+      - SERVICE_OAUTH_CLIENT_ID=kiconnect.ocfcloud
+      - SERVICE_OAUTH_CLIENT_SECRET=af53eb61-ce6a-558b-a8e3-14d2d3a5bf29
+      - SERVICE_OAUTH_SCOPES=kiconnect.devices
+      - SERVICE_OAUTH_ENDPOINT_TOKEN_URL=https://identity-server:3001/connect/token
+    secrets:
+      - secret-root-ca-crt
+      - secret-root-ca-key
+      - secret-ocf-grpc-gateway-crt
+      - secret-ocf-grpc-gateway-key
+      - secret-ocf-client-crt
+      - secret-ocf-client-key
+
+
+  
+  web-api-local:
+    image: dockerhub.kistler.com/skybase/kiconnect/webapi:latest
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - hostnet
+    environment:
+      - CONFIG=/run/secrets/secret-web-api-local-cfg
+    secrets:
+      - secret-web-api-local-cfg
+      - secret-root-ca-crt
+      - secret-web-api-local-crt
+      - secret-web-api-local-key
+    deploy:
+      resources:
+        limits:
+          memory: 140m
+  
+
+
+  
+  web-api-backend:
+    image: dockerhub.kistler.com/skybase/kiconnect/webapi:latest
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - proxy
+      - kiconnect
+    environment:
+      - CONFIG=/run/secrets/secret-web-api-backend-cfg
+    secrets:
+      - secret-web-api-backend-cfg
+      - secret-root-ca-crt
+      - secret-web-api-backend-crt
+      - secret-web-api-backend-key
+    deploy:
+      resources:
+        limits:
+          memory: 140m
+  
+
+
+
+  kafka:
+    image: dockerhub.kistler.com/kiconnect/kafka:1.0.1-2
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - kiconnect
+    ports:
+      - 9092:9092
+      - 20202:20202
+    environment:
+      - KAFKA_ADVERTISED_LISTENERS=192.168.100.19
+      - ZOOKEEPER_IP=zookeeper
+      - KAFKA_HEAP_OPTS=-Xms1000m -Xmx1000m
+      - JMX_PORT=20202
+      - TLS_ENABLED=true
+      - KAFKA_SSL_KEYSTORE_FILE_PATH=/run/secrets/secret-kafka-server-keystore
+      - KAFKA_SSL_KEYSTORE_PASSWORD_FILE_PATH=/run/secrets/secret-kafka-server-keystore-password
+      - KAFKA_SSL_KEY_PASSWORD_FILE_PATH=/run/secrets/secret-kafka-server-ssl-password
+      - KAFKA_SSL_TRUSTSTORE_FILE_PATH=/run/secrets/secret-kafka-server-truststore
+      - KAFKA_SSL_TRUSTSTORE_PASSWORD_FILE_PATH=/run/secrets/secret-kafka-server-truststore-password
+    secrets:
+      - secret-kafka-server-keystore
+      - secret-kafka-server-keystore-password
+      - secret-kafka-server-ssl-password
+      - secret-kafka-server-truststore-password
+      - secret-kafka-server-truststore
+    volumes:
+      - kafka-data:/data
+
+
+  zookeeper:
+    image: dockerhub.kistler.com/kiconnect/zookeeper:3.4.11-2
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - kiconnect
+    ports:
+      - 2181:2181
+    environment:
+      - SERVER_JVMFLAGS=-Xms100m -Xmx100m -Djava.awt.headless=true
+    volumes:
+      -  zookeeper-data:/tmp/zookeeper
+
+
+  identity-server:
+    image: dockerhub.kistler.com/kiconnect/identity-server/skc-2009:b97800b3
+
+    logging:
+      driver: json-file
+      options:
+        max-file: 5
+        max-size: 10m
+    networks:
+      - proxy
+      - kiconnect
+    extra_hosts:
+      - "dev.kiconnect.io:192.168.100.19"
+    environment:
+      - INITIALSETUP_ROLESDEFINITIONFILES=/run/secrets/secret-kiconnect-roles-cfg
+      - INITIALSETUP_CLIENTDEFINITIONFILES=/run/secrets/secret-kiconnect-clients-cfg
+      - INITIALSETUP_USERDEFINITIONFILES=/run/secrets/secret-kiconnect-users-cfg
+      - INITIALSETUP_APIDEFINITIONFILES=/run/secrets/secret-kiconnect-scopes-cfg
+      - SECURITY_TOKENSIGNINGCERTIFICATEPATH=/run/secrets/secret-sign-jwt-crt
+      - SECURITY_TLSCERTPATH=/run/secrets/secret-identity-server-crt
+      - SECURITY_TLSCERTKEYPATH=/run/secrets/secret-identity-server-key
+      - SECURITY_TLSCACERTPATH=/run/secrets/secret-root-ca-crt
+      - SECURITY_TOKENISSUERURI=https://dev.kiconnect.io
+      - SECURITY_INTERNALAPIENABLED=true
+      - ASPNETCORE_ENVIRONMENT=Development
+    secrets:
+      - secret-kiconnect-roles-cfg
+      - secret-kiconnect-clients-cfg
+      - secret-kiconnect-users-cfg
+      - secret-kiconnect-scopes-cfg
+      - secret-sign-jwt-crt
+      - secret-identity-server-crt
+      - secret-identity-server-key
+      - secret-root-ca-crt
+    volumes:
+      - identity-db:/app/db
+    deploy:
+      resources:
+        limits:
+          memory: 250m
+
+  mongodb:
+    image: mongo:4.2.3
+    command:
+      --tlsMode requireTLS
+      --tlsCAFile /run/secrets/secret-root-ca-crt
+      --tlsCertificateKeyFile /run/secrets/secret-mongodb-crt
+    networks:
+      - proxy
+      - kiconnect
+    volumes:
+      - iotivity-db:/data/db
+      - iotivity-db-config:/data/configdb
+    secrets:
+      - secret-mongodb-crt
+      - secret-root-ca-crt
+    deploy:
+      resources:
+        limits:
+          memory: 500m

@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ocfcloud.resourceaggregate.fullname" . }}
+  namespace: {{ .Release.Namespace }}  
+  labels:
+    {{- include "ocfcloud.resourceaggregate.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.resourceaggregate.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ocfcloud.resourceaggregate.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ocfcloud.resourceaggregate.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext.resourceaggregate | nindent 8 }}
+      containers:
+        - name: {{ .Values.services.resourceaggregate.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext.resourceaggregate | nindent 12 }}
+          image: {{ template "ocfcloud.resourceaggregate.image" . }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.services.resourceaggregate.grpcPort }}
+              protocol: TCP
+          env:
+            {{- with .Values.services.resourceaggregate.debug }}
+            - name: LOG_ENABLE_DEBUG
+              value: true
+            {{- end }}
+            - name: EXTERNAL_PORT
+              value: {{ .Values.services.resourceaggregate.grpcPort  }}
+            - name: ADDRESS
+              value: 0.0.0.0:{{ .Values.services.resourceaggregate.grpcPort }}
+            - name: NATS_URL
+              value: {{ template "ocfcloud.nats.address" . }}
+            - name: MONGODB_URI
+              value: {{ template "ocfcloud.mongodb.address" .  }}
+            - name: AUTH_SERVER_ADDRESS
+              value: {{ template "ocfcloud.authorizationserver.address" .  }}
+          resources:
+            {{- toYaml .Values.resources.resourceaggregate | nindent 12 }}
+      {{- with .Values.nodeSelector.resourceaggregate }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity.resourceaggregate }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations.resourceaggregate }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}

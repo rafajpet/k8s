@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "ocfcloud.authorizationserver.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "ocfcloud.authorizationserver.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.services.authorizationserver.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "ocfcloud.authorizationserver.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "ocfcloud.authorizationserver.selectorLabels" . | nindent 8 }}
+    spec:
+      securityContext:
+        {{- toYaml .Values.podSecurityContext.authorizationserver | nindent 8 }}
+      containers:
+        - name: {{ .Values.services.authorizationserver.name }}
+          securityContext:
+            {{- toYaml .Values.securityContext.authorizationserver | nindent 12 }}
+          image: {{ template "ocfcloud.authorizationserver.image" . }}
+          ports:
+            - name: grpc
+              containerPort: {{ .Values.services.authorizationserver.grpcPort }}
+              protocol: TCP
+          env:
+            {{- with .Values.services.authorizationserver.debug }}
+            - name: LOG_ENABLE_DEBUG
+              value: true
+            {{- end }}
+            - name: EXTERNAL_PORT
+              value: {{ .Values.services.authorizationserver.grpcPort  }}
+            - name: ADDRESS
+              value: 0.0.0.0:{{ .Values.services.authorizationserver.grpcPort }}
+            - name: NATS_URL
+              value: {{ template "ocfcloud.nats.address" . }}
+            - name: MONGODB_URI
+              value: {{ template "ocfcloud.mongodb.address" .  }}
+            - name: AUTH_SERVER_ADDRESS
+              value: {{ template "ocfcloud.authorizationserver.address" .  }}
+          resources:
+            {{- toYaml .Values.resources.authorizationserver | nindent 12 }}
+      {{- with .Values.nodeSelector.authorizationserver }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+    {{- with .Values.affinity.authorizationserver }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations.authorizationserver }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
